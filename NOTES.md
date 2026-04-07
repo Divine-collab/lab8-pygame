@@ -20,7 +20,7 @@ while running:
 - Methods: `__init__()`, `update()`, `draw()`, `check_boundaries()`
 
 #### Why Use Classes?
-- ✅ Easier to create multiple similar objects (10 squares)
+- ✅ Easier to create multiple similar objects (100 squares)
 - ✅ Code organization and readability
 - ✅ Easy to extend with new features
 - ✅ Separation of concerns
@@ -286,6 +286,85 @@ square_bottom = y + size
    - Add gravity (y velocity increases each frame)
    - Add damping (velocity decreases slightly each bounce)
    - Add friction (velocity slows down over time)
+
+6. **My Thinking on Flee AI Behavior**
+
+**Core Concept:**
+Smaller squares detect larger squares nearby and flee away from them, while larger squares continue wandering without changing behavior. This creates a "predator-prey" dynamic.
+
+**Detailed Mechanics:**
+
+1. **Distance Detection:**
+   - Small squares calculate distance to all other squares
+   - Formula: `distance = sqrt((other.x - self.x)² + (other.y - self.y)²)`
+   - Only react if distance < DETECTION_RANGE (e.g., 100 pixels)
+
+2. **Threat Identification:**
+   - Only larger squares (larger by SIZE_THRESHOLD) trigger flee
+   - Larger squares are passive obstacles
+   - All intelligence is in the small squares
+
+3. **Speed Response (Distance-Based Force):**
+   - Closer threat → faster flee response
+   - `force = (DETECTION_RANGE - distance) / DETECTION_RANGE`
+   - At 0 distance (touching): force = 1.0 (maximum panic)
+   - At 100px distance: force = 0.0 (safe, stop fleeing)
+   - At 50px distance: force = 0.5 (moderate fear)
+
+4. **Direction Calculation:**
+   - Calculate vector AWAY from threat
+   - `flee_x = self.x - threat.x`
+   - `flee_y = self.y - threat.y`
+   - This gives the escape direction
+
+5. **Directional Randomness (±60° Rotation):**
+   - Flee direction isn't rigid
+   - Can rotate by ±60° clockwise or anticlockwise
+   - Prevents predictable straight-line fleeing
+   - Maintains chaotic, organic movement
+
+6. **Minimum Safe Distance:**
+   - DETECTION_RANGE defines awareness boundary
+   - Threat detection stops beyond this range
+   - Prevents infinite chase loops
+   - Allows squares to feel "safe" when far enough
+
+7. **Interaction with Jitter:**
+   - First: Calculate and apply flee response
+   - Then: Apply existing jitter (±30° randomness)
+   - Result: Panicked but erratic movement
+   - Not predictable, but clearly intentional
+
+**Configuration Parameters Needed:**
+```python
+DETECTION_RANGE = 100       # How far ahead squares "see"
+SIZE_THRESHOLD = 5          # Minimum size difference to trigger flee
+FLEE_FORCE = 2.0            # Strength of panic response
+FLEE_ANGLE_VARIANCE = 60    # ±60° directional randomness in flee
+```
+
+**Algorithm Summary:**
+```
+For each small square per frame:
+  1. Detect all squares larger than (self.size + SIZE_THRESHOLD)
+  2. For each threat within DETECTION_RANGE:
+     - Calculate distance and force (closer = stronger)
+     - Calculate flee direction (away vector)
+     - Apply force × direction to velocity
+  3. Combine all threat responses
+  4. Apply jitter for final randomness
+  5. Clamp velocity to MAX_SPEED
+  6. Update position
+```
+
+**Expected Visual Effects:**
+- Small squares cluster away from large ones
+- Creates flowing, swirling escape patterns
+- Adds sense of "intelligence" to movement
+- Maintains unpredictability (not boring AI)
+- More engaging animation than pure randomness
+   - 
+
 
 ## Resources
 

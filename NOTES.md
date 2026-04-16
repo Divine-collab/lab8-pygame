@@ -372,3 +372,7 @@ For each small square per frame:
 - [Python Classes Tutorial](https://docs.python.org/3/tutorial/classes.html)
 - [Game Loop Pattern](https://en.wikipedia.org/wiki/Game_loop)
 - [Linear Interpolation](https://en.wikipedia.org/wiki/Linear_interpolation)
+
+**My thinking on life span**
+- the life span for each square is between 30s to 180s
+- If a square reaches its life span it disappeares and a new one is created

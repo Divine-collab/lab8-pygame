@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pygame Predator-Prey Simulator - Code Explorer</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #1e1e2e;
+            --bg-secondary: #313244;
+            --bg-tertiary: #45475a;
+            --text-primary: #cdd6f4;
+            --text-secondary: #bac2de;
+            --accent-blue: #89b4fa;
+            --accent-green: #a6e3a1;
+            --accent-red: #f38ba8;
+            --accent-yellow: #f9e2af;
+            --accent-purple: #cba6f7;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            padding: 2rem;
+            border-bottom: 3px solid var(--accent-blue);
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent-blue);
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--bg-tertiary);
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab-button.active {
+            background-color: var(--bg-tertiary);
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        h2 {
+            color: var(--accent-blue);
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        h3 {
+            color: var(--accent-green);
+            margin: 1.5rem 0 1rem 0;
+            font-size: 1.3rem;
+        }
+
+        h4 {
+            color: var(--accent-yellow);
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        code {
+            background-color: var(--bg-primary);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            color: var(--accent-yellow);
+            font-family: 'Courier New', monospace;
+        }
+
+        pre {
+            background-color: var(--bg-primary);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-left: 3px solid var(--accent-green);
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        table th {
+            background-color: var(--bg-tertiary);
+            color: var(--accent-blue);
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        table tr:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+            font-weight: bold;
+        }
+
+        .badge-new {
+            background-color: var(--accent-red);
+            color: white;
+        }
+
+        .badge-feature {
+            background-color: var(--accent-green);
+            color: white;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+
+        .note {
+            background-color: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid var(--accent-yellow);
+            margin: 1rem 0;
+        }
+
+        .performance-metric {
+            display: inline-block;
+            background-color: var(--bg-tertiary);
+            padding: 0.75rem 1rem;
+            margin: 0.5rem;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--bg-tertiary);
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎮 Pygame Predator-Prey Simulator</h1>
+        <p>Interactive Code Explorer - Updated with Lifespan Feature</p>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('overview')">Overview</button>
+            <button class="tab-button" onclick="showTab('features')">Features</button>
+            <button class="tab-button" onclick="showTab('square-class')">Square Class</button>
+            <button class="tab-button" onclick="showTab('lifespan')">Lifespan System</button>
+            <button class="tab-button" onclick="showTab('game-loop')">Game Loop</button>
+            <button class="tab-button" onclick="showTab('algorithms')">Algorithms</button>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <div class="section">
+                <h2>🎯 Project Overview</h2>
+                <p>A sophisticated predator-prey simulation using Pygame where:</p>
+                <ul class="feature-list">
+                    <li>10 colored squares of varying sizes move on an 800×600 canvas</li>
+                    <li>Smaller squares actively flee from larger squares</li>
+                    <li>Each square has a random lifespan (60-180 frames) <span class="badge badge-new">NEW</span></li>
+                    <li>Squares are automatically replaced when they die</li>
+                    <li>All squares bounce off walls with intelligent flee behavior</li>
+                    <li>Movement includes jitter effect for organic motion</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>📊 Latest Updates</h2>
+                <h3>Iteration 14: Complete Lifespan Implementation</h3>
+                <ul class="feature-list">
+                    <li>Fixed duplicate Square class definition</li>
+                    <li>Added lifespan attributes to __init__()</li>
+                    <li>Created is_dead() method for lifecycle checking</li>
+                    <li>Added create_random_square() helper function</li>
+                    <li>Integrated lifecycle management in game loop</li>
+                    <li>Tested and verified all functionality working</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>🔑 Key Statistics</h2>
+                <div class="performance-metric">Active Squares: 10</div>
+                <div class="performance-metric">FPS Target: 60</div>
+                <div class="performance-metric">Canvas Size: 800×600</div>
+                <div class="performance-metric">Lifespan Range: 60-180 frames</div>
+                <div class="performance-metric">Detection Range: 100px</div>
+                <div class="performance-metric">Max Speed: 5 px/frame</div>
+            </div>
+        </div>
+
+        <!-- FEATURES TAB -->
+        <div id="features" class="tab-content">
+            <div class="section">
+                <h2>✨ Core Features</h2>
+                <table>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Threat Detection</strong></td>
+                        <td>Detects larger squares within 100px range</td>
+                        <td><span class="badge badge-feature">Working</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Flee Behavior</strong></td>
+                        <td>Distance-based panic with accumulated forces</td>
+                        <td><span class="badge badge-feature">Working</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Speed Scaling</strong></td>
+                        <td>Smaller squares are faster (inverse scaling)</td>
+                        <td><span class="badge badge-feature">Working</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Jitter Effect</strong></td>
+                        <td>±30° random velocity rotation (5% per frame)</td>
+                        <td><span class="badge badge-feature">Working</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lifespan System</strong></td>
+                        <td>Squares live 60-180 frames, then replaced</td>
+                        <td><span class="badge badge-new">NEW - Working</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Boundary Collision</strong></td>
+                        <td>Velocity reversal on wall contact</td>
+                        <td><span class="badge badge-feature">Working</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="section">
+                <h2>🏗️ Architecture</h2>
+                <h3>Main Components</h3>
+                <ul class="feature-list">
+                    <li>Single Square class with all methods</li>
+                    <li>create_random_square() helper function</li>
+                    <li>60 FPS game loop with lifecycle management</li>
+                    <li>13 configuration constants for tuning</li>
+                </ul>
+
+                <h3>Code Organization</h3>
+                <pre><code>Constants (FPS, sizes, ranges)
+    ↓
+Square Class (OOP definition)
+    ├─ __init__() with lifespan
+    ├─ detect_larger_squares()
+    ├─ calculate_flee_vector()
+    ├─ update() - main physics
+    ├─ apply_jitter()
+    ├─ check_boundaries()
+    ├─ is_dead()
+    └─ draw()
+    ↓
+Helper Function
+    └─ create_random_square()
+    ↓
+Game Loop (60 FPS)
+    ├─ Lifecycle management
+    ├─ Physics updates
+    ├─ Rendering
+    └─ Event handling</code></pre>
+            </div>
+        </div>
+
+        <!-- SQUARE CLASS TAB -->
+        <div id="square-class" class="tab-content">
+            <div class="section">
+                <h2>🔳 Square Class API</h2>
+                <p>Complete reference for the Square class and all its methods.</p>
+            </div>
+
+            <div class="section">
+                <h3>Initialization</h3>
+                <pre><code>def __init__(self, x, y, size, color, velocity_x, velocity_y, birth_frame):
+    self.x = x                                    # X position
+    self.y = y                                    # Y position
+    self.size = size                              # Width/height
+    self.color = color                            # RGB tuple
+    self.velocity_x = velocity_x                  # X velocity
+    self.velocity_y = velocity_y                  # Y velocity
+    self.birth_frame = birth_frame                # When created
+    self.lifespan = random.randint(60, 180)      # Random lifespan!</code></pre>
+            </div>
+
+            <div class="section">
+                <h3>Core Methods</h3>
+
+                <h4>detect_larger_squares(all_squares)</h4>
+                <pre><code>Purpose: Find all threatening squares (larger ones nearby)
+Returns: List of Square objects that are threats
+Complexity: O(n)</code></pre>
+
+                <h4>calculate_flee_vector(threats)</h4>
+                <pre><code>Purpose: Calculate combined escape vector from all threats
+Returns: (float, float) - flee force in x,y directions
+Algorithm: Vector math with distance-based urgency</code></pre>
+
+                <h4>update(all_squares)</h4>
+                <pre><code>Purpose: Main physics loop per frame
+Steps:
+  1. Detect threats
+  2. Calculate flee vector
+  3. Apply to velocity
+  4. Clamp speed to MAX_SPEED
+  5. Update position
+  6. Apply jitter</code></pre>
+
+                <h4>apply_jitter()</h4>
+                <pre><code>Purpose: Add organic randomness to movement
+Mechanism: 5% chance to rotate velocity by ±30°
+Effect: Unpredictable evasion patterns</code></pre>
+
+                <h4>check_boundaries(width, height)</h4>
+                <pre><code>Purpose: Handle wall collisions
+Mechanism: Reverse velocity when hitting edges
+Result: Bouncing off canvas boundaries</code></pre>
+
+                <h4>is_dead(current_frame) <span class="badge badge-new">NEW</span></h4>
+                <pre><code>Purpose: Check if square exceeded lifespan
+Returns: boolean
+Logic: age = current_frame - birth_frame
+       return age > lifespan</code></pre>
+
+                <h4>draw(surface)</h4>
+                <pre><code>Purpose: Render square to Pygame surface
+Uses: pygame.draw.rect() with current position/color</code></pre>
+            </div>
+        </div>
+
+        <!-- LIFESPAN TAB -->
+        <div id="lifespan" class="tab-content">
+            <div class="section">
+                <h2>🔄 Lifespan System <span class="badge badge-new">NEW FEATURE</span></h2>
+                <p>Dynamic population turnover creating realistic behavior.</p>
+            </div>
+
+            <div class="section">
+                <h3>How It Works</h3>
+                <pre><code>Frame 0: Create 10 squares
+  Each square:
+    - Gets random lifespan (60-180 frames)
+    - Stored in self.lifespan
+    - Remembered in self.birth_frame
+
+Each Frame:
+  For each square:
+    - Calculate age = current_frame - birth_frame
+    - Check: is age > lifespan?
+    - If YES: Replace with new square
+    - If NO: Keep alive
+
+Result: Continuous population flow</code></pre>
+            </div>
+
+            <div class="section">
+                <h3>Why Random Lifespan Matters</h3>
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Fixed Lifespan</th>
+                        <th>Random Lifespan</th>
+                    </tr>
+                    <tr>
+                        <td>Death Pattern</td>
+                        <td>All synchronized</td>
+                        <td>Staggered over time</td>
+                    </tr>
+                    <tr>
+                        <td>Visual Effect</td>
+                        <td>Wave pattern (artificial)</td>
+                        <td>Natural flow</td>
+                    </tr>
+                    <tr>
+                        <td>Realism</td>
+                        <td>Unrealistic</td>
+                        <td>Like real populations</td>
+                    </tr>
+                    <tr>
+                        <td>Behavior Impact</td>
+                        <td>Jerky, repetitive</td>
+                        <td>Smooth, organic</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="section">
+                <h3>Example Timeline</h3>
+                <pre><code>Frame 0:
+  Square A: birth=0, lifespan=120
+  Square B: birth=0, lifespan=95
+  Square C: birth=0, lifespan=140
+
+Frame 95:
+  Square B: age=95, 95>95? NO → Alive
+
+Frame 96:
+  Square B: age=96, 96>95? YES → DEAD
+  → Replaced with new Square B2
+
+Frame 120:
+  Square A: age=120, 120>120? NO → Alive
+
+Frame 121:
+  Square A: age=121, 121>120? YES → DEAD
+  → Replaced with new Square A2</code></pre>
+            </div>
+
+            <div class="section">
+                <h3>Configuration Options</h3>
+                <pre><code>Current (60-180 frames per square):
+  self.lifespan = random.randint(60, 180)
+
+Short turnover (faster deaths):
+  self.lifespan = random.randint(30, 90)
+
+Long turnover (slower deaths):
+  self.lifespan = random.randint(120, 300)
+
+Size-based (bigger squares live longer):
+  self.lifespan = random.randint(60 + self.size, 180 + self.size)</code></pre>
+            </div>
+        </div>
+
+        <!-- GAME LOOP TAB -->
+        <div id="game-loop" class="tab-content">
+            <div class="section">
+                <h2>🔁 Game Loop Architecture</h2>
+                <p>Main execution cycle at 60 FPS with complete lifecycle management.</p>
+            </div>
+
+            <div class="section">
+                <h3>Execution Flow</h3>
+                <pre><code>Initialize Pygame
+Create 10 initial squares via create_random_square(0)
+
+MAIN LOOP (60 times per second):
+  1. Increment frame counter
+  2. Handle quit events
+  3. Lifecycle Management:
+     - Check each square: is_dead(frame)?
+     - Replace dead with create_random_square(frame)
+  4. Physics Updates:
+     - For each square: update(all_squares)
+     - For each square: check_boundaries()
+  5. Rendering:
+     - Clear canvas
+     - Draw all squares
+     - Update display
+  6. Frame Timing:
+     - Maintain 60 FPS via clock.tick(60)
+
+Cleanup: pygame.quit()</code></pre>
+            </div>
+
+            <div class="section">
+                <h3>Critical Order of Operations</h3>
+                <ol>
+                    <li><strong>Lifecycle First:</strong> Check/replace dead squares</li>
+                    <li><strong>Physics Second:</strong> Update living squares</li>
+                    <li><strong>Render Last:</strong> Display updated state</li>
+                </ol>
+                <p><strong>Why?</strong> Ensures game state is consistent: dead squares never get updated or rendered.</p>
+            </div>
+
+            <div class="section">
+                <h3>Performance Budget</h3>
+                <table>
+                    <tr>
+                        <th>Operation</th>
+                        <th>Actual Time</th>
+                        <th>% of 16.67ms</th>
+                    </tr>
+                    <tr>
+                        <td>Events/Input</td>
+                        <td>&lt;0.5ms</td>
+                        <td>3%</td>
+                    </tr>
+                    <tr>
+                        <td>Lifecycle Check</td>
+                        <td>&lt;1ms</td>
+                        <td>6%</td>
+                    </tr>
+                    <tr>
+                        <td>Physics Update</td>
+                        <td>~5ms</td>
+                        <td>30%</td>
+                    </tr>
+                    <tr>
+                        <td>Rendering</td>
+                        <td>~3ms</td>
+                        <td>18%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td><strong>~8-9ms</strong></td>
+                        <td><strong>50%</strong></td>
+                    </tr>
+                </table>
+                <p>✅ 50% headroom - excellent performance!</p>
+            </div>
+        </div>
+
+        <!-- ALGORITHMS TAB -->
+        <div id="algorithms" class="tab-content">
+            <div class="section">
+                <h2>⚙️ Core Algorithms</h2>
+                <p>Mathematical and computational algorithms powering the simulation.</p>
+            </div>
+
+            <div class="section">
+                <h3>1. Threat Detection Algorithm</h3>
+                <p><strong>Goal:</strong> Find all squares larger than self within detection range</p>
+                <pre><code>for each other_square in all_squares:
+    if other_square is self:
+        skip
+    if other_square.size <= (self.size + SIZE_THRESHOLD):
+        skip
+    distance = sqrt((self.x - other.x)² + (self.y - other.y)²)
+    if distance < DETECTION_RANGE:
+        add to threats list
+return threats</code></pre>
+                <p><strong>Complexity:</strong> O(n) where n = number of squares</p>
+            </div>
+
+            <div class="section">
+                <h3>2. Vector Calculation (Flee Force)</h3>
+                <p><strong>Goal:</strong> Calculate combined escape vector from all threats</p>
+                <pre><code>for each threat:
+    1. Calculate direction away: (self.x - threat.x, self.y - threat.y)
+    2. Normalize: divide by distance to get unit vector
+    3. Calculate urgency: (DETECTION_RANGE - distance) / DETECTION_RANGE
+       Closer threat = higher urgency (0 to 1)
+    4. Apply force: accumulate (normalized * urgency * FLEE_FORCE)
+return accumulated (flee_x, flee_y)</code></pre>
+                <p><strong>Example:</strong> Square at (100,100) detecting threat at (150,150)</p>
+                <pre><code>Direction: (-50, -50)
+Normalized: (-0.707, -0.707)
+Distance: 70.7px
+Urgency: (100-70.7)/100 = 0.29
+Force: -0.707 * 0.29 * 2.0 = -0.41
+Result: Flee southwest</code></pre>
+            </div>
+
+            <div class="section">
+                <h3>3. Speed Clamping</h3>
+                <p><strong>Goal:</strong> Ensure velocity never exceeds MAX_SPEED</p>
+                <pre><code>speed = sqrt(velocity_x² + velocity_y²)
+if speed > MAX_SPEED:
+    scale = MAX_SPEED / speed
+    velocity_x *= scale
+    velocity_y *= scale</code></pre>
+                <p><strong>Key Property:</strong> Preserves direction while limiting magnitude</p>
+            </div>
+
+            <div class="section">
+                <h3>4. Jitter (Velocity Rotation)</h3>
+                <p><strong>Goal:</strong> Add organic randomness by rotating velocity vector</p>
+                <pre><code>if random() < 0.05:  // 5% chance
+    speed = sqrt(velocity_x² + velocity_y²)
+    current_angle = atan2(velocity_y, velocity_x)
+    rotation = random(-30°, 30°)
+    new_angle = current_angle + rotation
+    velocity_x = speed * cos(new_angle)
+    velocity_y = speed * sin(new_angle)</code></pre>
+                <p><strong>Result:</strong> Direction changes, speed stays same</p>
+            </div>
+
+            <div class="section">
+                <h3>5. Lifecycle Management <span class="badge badge-new">NEW</span></h3>
+                <p><strong>Goal:</strong> Track square age and trigger replacement</p>
+                <pre><code>new_squares = []
+for each square in squares:
+    age = current_frame - square.birth_frame
+    if age > square.lifespan:
+        new_squares.append(create_random_square(current_frame))
+    else:
+        new_squares.append(square)
+squares = new_squares</code></pre>
+                <p><strong>Result:</strong> Continuous population turnover</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>🎮 Pygame Predator-Prey Simulator - Interactive Code Explorer</p>
+        <p>Generated: April 16, 2026 | Iteration 14 | Complete Lifespan Implementation</p>
+        <p>Features: Threat Detection • Flee Behavior • Lifespan Management • Population Dynamics</p>
+    </footer>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+
+            // Mark button as active
+            event.target.classList.add('active');
+        }
+
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+</body>
+</html>

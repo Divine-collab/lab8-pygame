@@ -17,7 +17,7 @@ FLEE_FORCE = 2.0
 class Square:
     """Represents a moving square on the canvas"""
 
-    def __init__(self, x, y, size, color, velocity_x, velocity_y):
+    def __init__(self, x, y, size, color, velocity_x, velocity_y, birth_frame):
         self.x = x
         self.y = y
         self.size = size
@@ -25,6 +25,8 @@ class Square:
         self.velocity_x = velocity_x
         self.velocity_y = velocity_y
         self.jitter_counter = 0
+        self.birth_frame = birth_frame
+        self.lifespan = random.randint(60, 180)
 
     def detect_larger_squares(self, all_squares):
         """Detect all larger squares within detection range"""
@@ -110,7 +112,11 @@ class Square:
 
         if self.y < 0 or self.y + self.size > height:
             self.velocity_y *= -1
-
+    
+    def is_dead(self, current_frame):
+        """Check if this square has exceeded its lifespan"""
+        age = current_frame - self.birth_frame
+        return age > self.lifespan
 
 pygame.init()
 
@@ -123,38 +129,53 @@ pygame.display.set_caption("Moving Squares")
 clock = pygame.time.Clock()
 
 
-squares = []
-
-for _ in range(10):
+def create_random_square(birth_frame):
+    """Create a new square with random properties"""
     size = random.randint(MIN_SIZE, MAX_SIZE)
-
     x = random.randint(0, SCREEN_WIDTH - size)
     y = random.randint(0, SCREEN_HEIGHT - size)
-
     color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
     speed = (MAX_SIZE - size) / (MAX_SIZE - MIN_SIZE) * MAX_SPEED
-
     angle = random.uniform(0, 2 * math.pi)
     velocity_x = speed * math.cos(angle)
     velocity_y = speed * math.sin(angle)
-
+    
     if abs(velocity_x) > MAX_SPEED:
         velocity_x = MAX_SPEED if velocity_x > 0 else -MAX_SPEED
     if abs(velocity_y) > MAX_SPEED:
         velocity_y = MAX_SPEED if velocity_y > 0 else -MAX_SPEED
+    
+    return Square(x, y, size, color, velocity_x, velocity_y, birth_frame)
 
-    square = Square(x, y, size, color, velocity_x, velocity_y)
-    squares.append(square)
+
+squares = []
+
+# Create initial 10 squares
+for _ in range(10):
+    squares.append(create_random_square(0))
 
 
 running = True
+frame = 0
 
 while running:
+    frame += 1
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
+    # Check for dead squares and replace them
+    new_squares = []
+    for square in squares:
+        if square.is_dead(frame):
+            new_squares.append(create_random_square(frame))
+        else:
+            new_squares.append(square)
+    
+    squares = new_squares
+
+    # Update all squares
     for square in squares:
         square.update(all_squares=squares)
         square.check_boundaries(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -165,7 +186,6 @@ while running:
         square.draw(screen)
 
     pygame.display.flip()
-
     clock.tick(FPS)
 
 pygame.quit()

@@ -4,7 +4,7 @@ import math
 
 MIN_SIZE = 10
 MAX_SIZE = 40
-MAX_SPEED = 5
+MAX_SPEED = 300  # pixels per second (was 5 for frame-based, now adjusted for time-based physics)
 JITTER_CHANCE = 0.05
 JITTER_ANGLE = 30
 FPS = 60
@@ -12,6 +12,7 @@ FPS = 60
 DETECTION_RANGE = 100
 SIZE_THRESHOLD = 5
 FLEE_FORCE = 2.0
+CHASE_FORCE = 2.0
 
 
 class Square:
@@ -41,6 +42,19 @@ class Square:
                 threats.append(other)
         return threats
 
+    def detect_smaller_squares(self, all_squares):
+        """Detect all smaller squares within detection range (prey)"""
+        prey = []
+        for other in all_squares:
+            if other is self:
+                continue
+            if other.size >= self.size:
+                continue
+            distance = math.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
+            if distance < DETECTION_RANGE:
+                prey.append(other)
+        return prey
+
     def calculate_flee_vector(self, threats):
         """Calculate flee vector away from all threats"""
         flee_x = 0.0
@@ -65,7 +79,31 @@ class Square:
         
         return (flee_x, flee_y)
 
-    def update(self, all_squares):
+    def calculate_chase_vector(self, prey):
+        """Calculate chase vector toward all prey"""
+        chase_x = 0.0
+        chase_y = 0.0
+        
+        for target in prey:
+            dx = target.x - self.x
+            dy = target.y - self.y
+            distance = math.sqrt(dx**2 + dy**2)
+            
+            if distance == 0:
+                distance = 1  
+            
+            norm_x = dx / distance
+            norm_y = dy / distance
+            
+            force = (DETECTION_RANGE - distance) / DETECTION_RANGE
+            force = max(0, force)  
+            
+            chase_x += norm_x * force * CHASE_FORCE
+            chase_y += norm_y * force * CHASE_FORCE
+        
+        return (chase_x, chase_y)
+    
+    def update(self, all_squares, delta_time):
         threats = self.detect_larger_squares(all_squares)
         
         flee = self.calculate_flee_vector(threats)
@@ -79,11 +117,70 @@ class Square:
             self.velocity_x *= scale
             self.velocity_y *= scale
         
-        self.x += self.velocity_x
-        self.y += self.velocity_y
+        self.x += self.velocity_x * delta_time
+        self.y += self.velocity_y * delta_time
         
         self.apply_jitter()
-
+    
+    def calculate_chase_vector(self, threats):
+        """Calculate chase vector away from all threats"""
+        chase_x = 0.0
+        chase_y = 0.0
+        
+        for threat in threats:
+            dx = threat.x - self.x
+            dy = threat.y - self.y
+            distance = math.sqrt(dx**2 + dy**2)
+            
+            if distance == 0:
+                distance = 1  
+            
+            norm_x = dx / distance
+            norm_y = dy / distance
+            
+            force = (DETECTION_RANGE - distance) / DETECTION_RANGE
+            force = max(0, force)  
+            
+            chase_x += norm_x * force * CHASE_FORCE
+            chase_y += norm_y * force * CHASE_FORCE
+        
+        return (chase_x, chase_y)
+    
+    
+    
+    def update(self, all_squares, delta_time):
+        """Update square behavior based on size-based role (predator or prey)"""
+        # Determine role based on average size
+        average_size = (MIN_SIZE + MAX_SIZE) / 2
+        
+        # Choose behavior based on size
+        if self.size >= average_size:
+            # PREDATOR BEHAVIOR: Chase smaller squares
+            targets = self.detect_smaller_squares(all_squares)
+            movement_vector = self.calculate_chase_vector(targets)
+        else:
+            # PREY BEHAVIOR: Flee from larger squares
+            threats = self.detect_larger_squares(all_squares)
+            movement_vector = self.calculate_flee_vector(threats)
+        
+        # Apply movement vector to velocity
+        self.velocity_x += movement_vector[0]
+        self.velocity_y += movement_vector[1]
+        
+        # Clamp speed to MAX_SPEED
+        speed = math.sqrt(self.velocity_x**2 + self.velocity_y**2)
+        if speed > MAX_SPEED:
+            scale = MAX_SPEED / speed
+            self.velocity_x *= scale
+            self.velocity_y *= scale
+        
+        # Update position with time-based physics
+        self.x += self.velocity_x * delta_time
+        self.y += self.velocity_y * delta_time
+        
+        # Add organic randomness
+        self.apply_jitter()
+        
     def apply_jitter(self):
         """Apply random rotation to velocity vector for jitter effect"""
         if random.random() < JITTER_CHANCE:
@@ -124,7 +221,7 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Moving Squares")
+pygame.display.set_caption("Predator-Prey Simulator")
 
 clock = pygame.time.Clock()
 
@@ -150,8 +247,7 @@ def create_random_square(birth_frame):
 
 squares = []
 
-# Create initial 10 squares
-for _ in range(10):
+for _ in range(20):
     squares.append(create_random_square(0))
 
 
@@ -160,12 +256,12 @@ frame = 0
 
 while running:
     frame += 1
+    delta_time = clock.get_time() / 1000.0  
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Check for dead squares and replace them
     new_squares = []
     for square in squares:
         if square.is_dead(frame):
@@ -175,9 +271,8 @@ while running:
     
     squares = new_squares
 
-    # Update all squares
     for square in squares:
-        square.update(all_squares=squares)
+        square.update(all_squares=squares, delta_time=delta_time)
         square.check_boundaries(SCREEN_WIDTH, SCREEN_HEIGHT)
 
     screen.fill((255, 255, 255))

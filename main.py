@@ -1,286 +1,132 @@
 import pygame
 import random
 import math
+from typing import List, Tuple, Optional
 
-MIN_SIZE = 10
-MAX_SIZE = 40
-MAX_SPEED = 300  # pixels per second (was 5 for frame-based, now adjusted for time-based physics)
+MAX_SPEED = 300
 JITTER_CHANCE = 0.05
 JITTER_ANGLE = 30
 FPS = 60
-
 DETECTION_RANGE = 100
 SIZE_THRESHOLD = 5
 FLEE_FORCE = 2.0
 CHASE_FORCE = 2.0
-
+MIN_SIZE = 4
+MAX_SIZE = 25
+MID_SIZE = 10
+TRAILS_LENGTH = 30
 
 class Square:
-    """Represents a moving square on the canvas"""
-
-    def __init__(self, x, y, size, color, velocity_x, velocity_y, birth_frame):
+    def __init__(self, x: float, y: float, size: int, color: Tuple[int, int, int], 
+                 vx: float, vy: float, birth_time: float):
         self.x = x
         self.y = y
         self.size = size
         self.color = color
-        self.velocity_x = velocity_x
-        self.velocity_y = velocity_y
-        self.jitter_counter = 0
-        self.birth_frame = birth_frame
-        self.lifespan = random.randint(60, 180)
+        self.velocity_x = vx
+        self.velocity_y = vy
+        self.birth_time = birth_time
+        self.lifespan = random.uniform(3.0, 9.0)
+        self.trail: List[Tuple[float, float]] = []  
 
-    def detect_larger_squares(self, all_squares):
-        """Detect all larger squares within detection range"""
-        threats = []
-        for other in all_squares:
-            if other is self:
-                continue
-            if other.size <= self.size + SIZE_THRESHOLD:
-                continue
-            distance = math.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
-            if distance < DETECTION_RANGE:
-                threats.append(other)
-        return threats
+    def check_collision(self, other: 'Square') -> bool:
+        """EX 4: Returns true if self and other collide using Pygame Rects[cite: 1]."""
+        rect1 = pygame.Rect(self.x, self.y, self.size, self.size)
+        rect2 = pygame.Rect(other.x, other.y, other.size, other.size)
+        return rect1.colliderect(rect2)
 
-    def detect_smaller_squares(self, all_squares):
-        """Detect all smaller squares within detection range (prey)"""
-        prey = []
-        for other in all_squares:
-            if other is self:
-                continue
-            if other.size >= self.size:
-                continue
-            distance = math.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
-            if distance < DETECTION_RANGE:
-                prey.append(other)
-        return prey
+    def check_boundaries(self, width: int, height: int) -> None:
+        """EX 3: Screen Wrapping Feature[cite: 1]."""
+        if self.x < 0: self.x = width
+        elif self.x > width: self.x = 0
+        if self.y < 0: self.y = height
+        elif self.y > height: self.y = 0
 
-    def calculate_flee_vector(self, threats):
-        """Calculate flee vector away from all threats"""
-        flee_x = 0.0
-        flee_y = 0.0
+    def update(self, all_squares: List['Square'], delta_time: float):
+        avg_size = (MIN_SIZE + MAX_SIZE + MID_SIZE) / 3
         
-        for threat in threats:
-            dx = self.x - threat.x
-            dy = self.y - threat.y
-            distance = math.sqrt(dx**2 + dy**2)
-            
-            if distance == 0:
-                distance = 1  
-            
-            norm_x = dx / distance
-            norm_y = dy / distance
-            
-            force = (DETECTION_RANGE - distance) / DETECTION_RANGE
-            force = max(0, force)  
-            
-            flee_x += norm_x * force * FLEE_FORCE
-            flee_y += norm_y * force * FLEE_FORCE
-        
-        return (flee_x, flee_y)
+        move_x, move_y = 0.0, 0.0
 
-    def calculate_chase_vector(self, prey):
-        """Calculate chase vector toward all prey"""
-        chase_x = 0.0
-        chase_y = 0.0
-        
-        for target in prey:
-            dx = target.x - self.x
-            dy = target.y - self.y
-            distance = math.sqrt(dx**2 + dy**2)
-            
-            if distance == 0:
-                distance = 1  
-            
-            norm_x = dx / distance
-            norm_y = dy / distance
-            
-            force = (DETECTION_RANGE - distance) / DETECTION_RANGE
-            force = max(0, force)  
-            
-            chase_x += norm_x * force * CHASE_FORCE
-            chase_y += norm_y * force * CHASE_FORCE
-        
-        return (chase_x, chase_y)
-    
-    def update(self, all_squares, delta_time):
-        threats = self.detect_larger_squares(all_squares)
-        
-        flee = self.calculate_flee_vector(threats)
-        
-        self.velocity_x += flee[0]
-        self.velocity_y += flee[1]
-        
-        speed = math.sqrt(self.velocity_x**2 + self.velocity_y**2)
-        if speed > MAX_SPEED:
-            scale = MAX_SPEED / speed
-            self.velocity_x *= scale
-            self.velocity_y *= scale
-        
+        self.velocity_x += move_x
+        self.velocity_y += move_y
+
+        self.trail.append((self.x + self.size/2, self.y + self.size/2))
+        if len(self.trail) > TRAILS_LENGTH:
+            self.trail.pop(0)
+
         self.x += self.velocity_x * delta_time
         self.y += self.velocity_y * delta_time
-        
         self.apply_jitter()
-    
-    def calculate_chase_vector(self, threats):
-        """Calculate chase vector away from all threats"""
-        chase_x = 0.0
-        chase_y = 0.0
-        
-        for threat in threats:
-            dx = threat.x - self.x
-            dy = threat.y - self.y
-            distance = math.sqrt(dx**2 + dy**2)
-            
-            if distance == 0:
-                distance = 1  
-            
-            norm_x = dx / distance
-            norm_y = dy / distance
-            
-            force = (DETECTION_RANGE - distance) / DETECTION_RANGE
-            force = max(0, force)  
-            
-            chase_x += norm_x * force * CHASE_FORCE
-            chase_y += norm_y * force * CHASE_FORCE
-        
-        return (chase_x, chase_y)
-    
-    
-    
-    def update(self, all_squares, delta_time):
-        """Update square behavior based on size-based role (predator or prey)"""
-        # Determine role based on average size
-        average_size = (MIN_SIZE + MAX_SIZE) / 2
-        
-        # Choose behavior based on size
-        if self.size >= average_size:
-            # PREDATOR BEHAVIOR: Chase smaller squares
-            targets = self.detect_smaller_squares(all_squares)
-            movement_vector = self.calculate_chase_vector(targets)
-        else:
-            # PREY BEHAVIOR: Flee from larger squares
-            threats = self.detect_larger_squares(all_squares)
-            movement_vector = self.calculate_flee_vector(threats)
-        
-        # Apply movement vector to velocity
-        self.velocity_x += movement_vector[0]
-        self.velocity_y += movement_vector[1]
-        
-        # Clamp speed to MAX_SPEED
-        speed = math.sqrt(self.velocity_x**2 + self.velocity_y**2)
-        if speed > MAX_SPEED:
-            scale = MAX_SPEED / speed
-            self.velocity_x *= scale
-            self.velocity_y *= scale
-        
-        # Update position with time-based physics
-        self.x += self.velocity_x * delta_time
-        self.y += self.velocity_y * delta_time
-        
-        # Add organic randomness
-        self.apply_jitter()
-        
+
     def apply_jitter(self):
-        """Apply random rotation to velocity vector for jitter effect"""
         if random.random() < JITTER_CHANCE:
-            speed = math.sqrt(self.velocity_x**2 + self.velocity_y**2)
+            angle = math.atan2(self.velocity_y, self.velocity_x)
+            angle += math.radians(random.uniform(-JITTER_ANGLE, JITTER_ANGLE))
+            speed = math.hypot(self.velocity_x, self.velocity_y)
+            self.velocity_x = math.cos(angle) * speed
+            self.velocity_y = math.sin(angle) * speed
 
-            if speed == 0:
-                return
+    def draw(self, surface: pygame.Surface):
+        if len(self.trail) > 1:
+            for i in range(len(self.trail) - 1):
+                p1, p2 = self.trail[i], self.trail[i+1]
+                if math.dist(p1, p2) < 100: 
+                    pygame.draw.line(surface, self.color, p1, p2, 2)
+        
+        pygame.draw.rect(surface, self.color, (self.x, self.y, self.size, self.size))
 
-            current_angle = math.atan2(self.velocity_y, self.velocity_x)
+    def is_dead(self, current_time: float) -> bool:
+        return (current_time - self.birth_time) > self.lifespan
 
-            jitter_rotation = random.uniform(-JITTER_ANGLE, JITTER_ANGLE)
-            jitter_radians = math.radians(jitter_rotation)
-            new_angle = current_angle + jitter_radians
-
-            self.velocity_x = speed * math.cos(new_angle)
-            self.velocity_y = speed * math.sin(new_angle)
-
-    def draw(self, surface):
-        pygame.draw.rect(
-            surface, self.color, pygame.Rect(self.x, self.y, self.size, self.size)
-        )
-
-    def check_boundaries(self, width, height):
-        if self.x < 0 or self.x + self.size > width:
-            self.velocity_x *= -1
-
-        if self.y < 0 or self.y + self.size > height:
-            self.velocity_y *= -1
-    
-    def is_dead(self, current_frame):
-        """Check if this square has exceeded its lifespan"""
-        age = current_frame - self.birth_frame
-        return age > self.lifespan
+def create_random_square(birth_time: float, size: Optional[int] = None) -> Square:
+    """EX 1 & 2: Support specific size creation[cite: 1]."""
+    s = size if size is not None else random.randint(MIN_SIZE, MAX_SIZE)
+    x = random.randint(0, 800 - s)
+    y = random.randint(0, 600 - s)
+    color = (random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
+    angle = random.uniform(0, 2 * math.pi)
+    speed = random.uniform(50, MAX_SPEED)
+    return Square(x, y, s, color, math.cos(angle)*speed, math.sin(angle)*speed, birth_time)
 
 pygame.init()
-
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Predator-Prey Simulator")
-
+screen = pygame.display.set_mode((800, 600))
 clock = pygame.time.Clock()
-
-
-def create_random_square(birth_frame):
-    """Create a new square with random properties"""
-    size = random.randint(MIN_SIZE, MAX_SIZE)
-    x = random.randint(0, SCREEN_WIDTH - size)
-    y = random.randint(0, SCREEN_HEIGHT - size)
-    color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-    speed = (MAX_SIZE - size) / (MAX_SIZE - MIN_SIZE) * MAX_SPEED
-    angle = random.uniform(0, 2 * math.pi)
-    velocity_x = speed * math.cos(angle)
-    velocity_y = speed * math.sin(angle)
-    
-    if abs(velocity_x) > MAX_SPEED:
-        velocity_x = MAX_SPEED if velocity_x > 0 else -MAX_SPEED
-    if abs(velocity_y) > MAX_SPEED:
-        velocity_y = MAX_SPEED if velocity_y > 0 else -MAX_SPEED
-    
-    return Square(x, y, size, color, velocity_x, velocity_y, birth_frame)
-
+elapsed_time = 0.0
 
 squares = []
-
-for _ in range(20):
-    squares.append(create_random_square(0))
-
+for s, count in [(25, 5), (10, 10), (4, 30)]:
+    for _ in range(count):
+        squares.append(create_random_square(0.0, size=s))
 
 running = True
-frame = 0
-
 while running:
-    frame += 1
-    delta_time = clock.get_time() / 1000.0  
+    dt = clock.tick(FPS) / 1000.0
+    elapsed_time += dt
     
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+        if event.type == pygame.QUIT: running = False
+
+    eaten = set()
+    for i, predator in enumerate(squares):
+        for j, prey in enumerate(squares):
+            if i != j and predator.size > prey.size and predator.check_collision(prey):
+                eaten.add(j)
+                predator.size = min(predator.size + 2, 50) 
 
     new_squares = []
-    for square in squares:
-        if square.is_dead(frame):
-            new_squares.append(create_random_square(frame))
+    for i, s in enumerate(squares):
+        if s.is_dead(elapsed_time) or i in eaten:
+            new_squares.append(create_random_square(elapsed_time, size=s.size if i in eaten else None))
         else:
-            new_squares.append(square)
-    
+            new_squares.append(s)
     squares = new_squares
 
-    for square in squares:
-        square.update(all_squares=squares, delta_time=delta_time)
-        square.check_boundaries(SCREEN_WIDTH, SCREEN_HEIGHT)
-
-    screen.fill((255, 255, 255))
-
-    for square in squares:
-        square.draw(screen)
+    screen.fill((30, 30, 30))
+    for s in squares:
+        s.update(squares, dt)
+        s.check_boundaries(800, 600)
+        s.draw(screen)
 
     pygame.display.flip()
-    clock.tick(FPS)
 
 pygame.quit()
